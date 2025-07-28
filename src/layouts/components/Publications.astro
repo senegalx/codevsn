@@ -2,41 +2,40 @@
 import { Image } from "astro:assets";
 import config from "@config/config.json";
 import dateFormat from "@lib/utils/dateFormat";
-import readingTime from "@lib/utils/readingTime";
 import { humanize, plainify, slugi } from "@lib/utils/textConverter";
 const { summary_length } = config.settings;
-const { posts } = Astro.props;
+const { publications } = Astro.props;
 ---
 
-<h2 class="h4 mb-4">À la une</h2>
-<div class="featured-posts row">
+<div class="row">
   {
-    posts.map((post: any) => (
-      <div class="mb-8 md:col-6">
+    publications.map((item: any) => (
+      <div class="mb-8 md:col-6 lg:col-4">
         <div class="card">
-          {post.image.fields?.file && (
+          {item.photo?.fields.file && (
             <Image
               class="card-img"
-              width={235}
-              height={304}
-              src={post.image.fields.file.url}
-              alt={post.image.fields.file.fileName}
+              width={335}
+              height={210}
+              src={item.photo.fields.file.url}
+              alt={item.photo.fields.file.fileName}
             />
           )}
           <div class="card-content">
-            <div class="card-tags space-x-1">
-              {post.categories.map((category: any) => (
+            {/* Categories are not available in publication data */}
+            {/* <div class="card-tags space-x-1">
+              {item.categories.map((category: any) => (
                 <a class="tag" href={`/categories/${slugi(category)}`}>
                   {humanize(category)}
                 </a>
               ))}
-            </div>
+            </div> */}
             <h3 class="h4 card-title">
-              <a href={`/actualites/${post.slug}`}>{post.title}</a>
+              <a href={`/publications/${item.slug}`}>{item.titre}</a>
             </h3>
             <p class="mb-4 text-text">
               {plainify(
-                post.contenu
+                item.description
                   ?.slice(0, Number(summary_length))
               )}
               ...
@@ -56,9 +55,10 @@ const { posts } = Astro.props;
                     fill="#939393"
                   />
                 </svg>
-                {dateFormat(post.date)}
+                {dateFormat(item.dateDePublication)}
               </span>
-              <span class="inline-flex items-center text-xs text-[#666]">
+               {/* Reading time is not applicable for publications */}
+              {/* <span class="inline-flex items-center text-xs text-[#666]">
                 <svg
                   class="mr-1.5"
                   width="16"
@@ -72,8 +72,8 @@ const { posts } = Astro.props;
                     fill="#939393"
                   />
                 </svg>
-                {readingTime(post.contenu)}
-              </span>
+                {readingTime(item.contenu)}
+              </span> */}
             </div>
           </div>
         </div>
