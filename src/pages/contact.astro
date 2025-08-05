@@ -46,16 +46,19 @@ const page_data = {
         </div>
         <div class="md:col-6 md:order-1">
           <form
+            name="contact"
             class="lg:max-w-[484px]"
             action={contact_form_action}
             method="POST"
+            data-netlify="true"
           >
             <div class="form-group mb-5">
               <label class="form-label" for="name">Nom et prénom</label>
               <input
                 class="form-control"
                 type="text"
-                id="name"
+                id="nom"
+                name="nom"
                 placeholder="Your Full Name"
               />
             </div>
@@ -65,12 +68,13 @@ const page_data = {
                 class="form-control"
                 type="text"
                 id="email"
+                name="email"
                 placeholder="Your  Email Address"
               />
             </div>
             <div class="form-group mb-5">
               <label class="form-label" for="reason">Raison/Objet</label>
-              <select name="reason" id="reason" class="form-select" required>
+              <select name="reason" id="raison" name="raison" class="form-select" required>
                 <option value="">Sélectionnez la raison/le but</option>
                 <option value="investment plane">Volontaires</option>
                 <option value="investment plane-2">Associations</option>
@@ -82,6 +86,7 @@ const page_data = {
               <textarea
                 class="form-control h-[150px]"
                 id="message"
+                name="message"
                 cols="30"
                 rows="10"></textarea>
             </div>
@@ -95,4 +100,26 @@ const page_data = {
       </div>
     </div>
   </section>
+  <script>
+    const form = document.querySelector('form[name="contact"]');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const formData = new FormData(form);
+      formData.append('form-name', 'contact');
+      try {
+        const response = await fetch('/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(formData).toString(),
+        });
+        if (response.ok) {
+          form.innerHTML = '<p>Merci pour votre message. Nous vous contacterons bientôt.</p>';
+        } else {
+          alert('Une erreur s\'est produite. Veuillez réessayer.');
+        }
+      } catch (error) {
+        alert('Une erreur s\'est produite. Veuillez réessayer.');
+      }
+    });
+  </script>
 </Base>
