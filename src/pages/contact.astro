@@ -50,6 +50,7 @@ const page_data = {
             class="lg:max-w-[484px]"
             action={contact_form_action}
             method="POST"
+            data-netlify-recaptcha="true"
             data-netlify="true"
           >
             <div class="form-group mb-5">
@@ -90,6 +91,7 @@ const page_data = {
                 cols="30"
                 rows="10"></textarea>
             </div>
+            <div class="form-group mb-5" data-netlify-recaptcha="true"></div>
             <input
               class="btn btn-primary block w-full"
               type="submit"
