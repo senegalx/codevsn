@@ -87,9 +87,7 @@ service:
           active, le volontariat et le progrès social.
     - title: Nos valeurs
       description: Connection, Engagement et Progrès
-      video:
-        thumbnail: /images/intro-thumbnail.png
-        video_id: YBEKkDJtY2s
+      image: /images/vol2.png
       button:
         label: Connaissez-nous
         link: /a-propos

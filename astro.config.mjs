@@ -7,6 +7,7 @@ import remarkToc from "remark-toc";
 import config from "./src/config/config.json";
 
 import partytown from "@astrojs/partytown";
+import { env } from 'process';
 
 // https://astro.build/config
 export default defineConfig({
@@ -32,5 +33,15 @@ export default defineConfig({
       wrap: true
     },
     extendDefaultPlugins: true
-  }
+  },
+  vite: {
+    css: {
+      codeSplit: true,
+    },
+    server: {
+      allowedHosts: [(env.REPLIT_DOMAINS || '').split(',')[0]],
+      host: '0.0.0.0',
+      port: 4321,
+    },
+  },
 });

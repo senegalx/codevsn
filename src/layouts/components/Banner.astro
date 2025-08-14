@@ -1,33 +1,52 @@
 ---
 import { Image } from "astro:assets";
 import { markdownify } from "@lib/utils/textConverter";
+import VideoComponent from "@layouts/function-components/VideoComponent";
 const { banner } = Astro.props;
 const { title, button, image, content } = banner;
 ---
 
-<section class="section banner relative">
+<section class="section banner relative overflow-hidden">
   <div class="container">
     <div class="row items-center">
       <div class="lg:col-6">
-        <h1 class="banner-title" set:html={markdownify(title)} />
+        <h1 class="banner-title animate-fade-in-up" set:html={markdownify(title)} />
 
-        <p class="mt-6" set:html={markdownify(content)} />
+        <p class="mt-6 text-lg leading-relaxed animate-fade-in-up animation-delay-200" set:html={markdownify(content)} />
 
         {
           button.enable && (
-            <a class="btn btn-white mt-8" href={button.link}>
+            <a class="btn btn-white mt-8 animate-fade-in-up animation-delay-400 hover:transform hover:scale-105 transition-all duration-300" href={button.link}>
               {button.label}
             </a>
           )
         }
+        
+        <div class="mt-8 flex items-center space-x-6 animate-fade-in-up animation-delay-600">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-primary">15+</div>
+            <div class="text-sm text-gray-600">Associations partenaires</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-primary">1000+</div>
+            <div class="text-sm text-gray-600">Volontaires actifs</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-primary">9</div>
+            <div class="text-sm text-gray-600">Domaines d'action</div>
+          </div>
+        </div>
       </div>
       <div class="lg:col-6">
-        <Image
-          class="w-full object-contain"
-          alt="banner"
-          src={image}
-          width={603}
+        <VideoComponent
+          client:load
+          src="/images/intro-thumbnail.png"
           height={396}
+          width={603}
+          title="Notre mission - Collectif des Volontaires du Sénégal"
+          video_id="YBEKkDJtY2s"
+          video_width="w-[603px]"
+          video_height="h-[396px]"
         />
       </div>
     </div>
