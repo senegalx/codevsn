@@ -1,69 +1,149 @@
 ---
 import { getPublications } from "../../lib/publicationParser.astro";
-import PageHeader from "@components/PageHeader.astro";
-import Shape from "@components/Shape.astro";
 import Base from "@layouts/Base.astro";
 import Cta from "@layouts/partials/Cta.astro";
-import { getEntryBySlug } from "astro:content";
-import { Image } from "astro:assets";
 import CareerBenifits from "@layouts/function-components/CareerBenifits";
 import PublicationPosts from "@layouts/function-components/PublicationPosts";
+import { getEntryBySlug } from "astro:content";
 import config from "@config/config.json";
+import dateFormat from "@lib/utils/dateFormat";
+import { humanize } from "@lib/utils/textConverter";
+
 const publicationsIndex = await getEntryBySlug<any, string>("publications", "-index");
-  const careerIndex = await getEntryBySlug<any, string>("publications", "-index");
-const { benifits, career, image, categories } = publicationsIndex.data;
-const page_data = {
-  title: careerIndex.data.title,
-  page_title: careerIndex.data.page_title,
-  content: careerIndex.body,
-};
+const { benifits, career, categories } = publicationsIndex.data;
 const publications = await getPublications();
 const postsPerPage = config.settings.pagination;
+const featured = publications[0];
+
+const CATEGORY_COLORS = ["#24A1FF", "#7B5AFF", "#FDC528", "#FF5874", "#12E189", "#E545FF"];
+const featuredCat = featured
+  ? (Array.isArray(featured.categories) ? featured.categories[0] : featured.categories)
+  : null;
+const featuredCatColor =
+  featuredCat
+    ? (CATEGORY_COLORS[categories.indexOf(featuredCat) % CATEGORY_COLORS.length] || "#24A1FF")
+    : "#24A1FF";
 ---
 
 <Base
-  title={careerIndex.data.title}
-  meta_title={careerIndex.data.meta_title}
-  description={careerIndex.data.description}
-  image={careerIndex.data.image}
+  title={publicationsIndex.data.title}
+  meta_title={publicationsIndex.data.meta_title}
+  description={publicationsIndex.data.description}
+  image={featured?.photo?.fields.file.url
+    ? `https:${featured.photo.fields.file.url}`
+    : publicationsIndex.data.image}
 >
-  <Shape />
+  {featured && (
+    <section class="section pb-10 pt-12">
+      <div class="container">
 
-  <section class="page-hero pb-14 pt-16">
-    <div class="container">
-      <PageHeader page_data={page_data} />
-      <div class="col-12 mt-14">
-        <div class="relative">
-          <Image
-            src={image}
-            alt=""
-            height={532}
-            width={1044}
-            class="w-full rounded"
-          />
-          <Image
-            class="lg:h-[150px] lg:w-[150px] absolute -left-[8%] bottom-[12%] z-[-1] h-20 w-20 -rotate-90 lg:-left-8 lg:bottom-4"
-            src="/images/shape.png"
-            height={130}
-            width={130}
-            alt=""
-          />
-          <Image
-            class="absolute -bottom-4 -right-4 z-[-1] h-16 w-16 -rotate-90"
-            src="/images/shape.png"
-            alt=""
-            height={64}
-            width={64}
-          />
+        <!-- Breadcrumb -->
+        <nav class="mb-10">
+          <ul class="breadcrumb inline-flex h-8 items-center justify-center space-x-2 rounded-3xl bg-theme-light px-4 py-2">
+            <li class="leading-none text-dark">
+              <a href="/" class="inline-flex items-center text-primary">
+                <svg class="mr-1.5" width="15" height="15" viewBox="0 0 16 16" fill="none">
+                  <path d="M13.1769 15.0588H10.3533V9.41178H5.64744V15.0588H2.82391V6.58825H1.88274V16H14.118V6.58825H13.1769V15.0588ZM6.58862 15.0588V10.353H9.41215V15.0588H6.58862ZM15.8084 6.09225L15.2512 6.85178L8.00038 1.52472L0.749559 6.8499L0.192383 6.09131L8.00038 0.357666L15.8084 6.09225Z" fill="black"/>
+                </svg>
+                <span class="text-sm leading-none">Accueil</span>
+              </a>
+            </li>
+            <li class="leading-none text-dark">
+              <span class="text-sm leading-none">/ Publications</span>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- Hero split 50/50 -->
+        <div class="row items-center gap-y-10">
+
+          <!-- Image gauche -->
+          <div class="lg:col-6">
+            <a href={`/publications/${featured.slug}`} class="group block overflow-hidden rounded-2xl shadow-xl">
+              {featured.photo?.fields.file && (
+                <img
+                  class="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  src={`https:${featured.photo.fields.file.url}`}
+                  alt={featured.photo.fields.file.fileName}
+                  width="640"
+                  height="400"
+                  loading="eager"
+                />
+              )}
+            </a>
+          </div>
+
+          <!-- Contenu droite -->
+          <div class="lg:col-6">
+            <!-- Badges + date -->
+            <div class="mb-5 flex flex-wrap items-center gap-3">
+              <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                Dernière publication
+              </span>
+              {featuredCat && (
+                <span
+                  class="rounded-full px-3 py-1 text-xs font-semibold text-white"
+                  style={`background-color: ${featuredCatColor}`}
+                >
+                  {humanize(featuredCat)}
+                </span>
+              )}
+              <span class="inline-flex items-center text-sm text-light">
+                <svg class="mr-1.5" width="14" height="14" viewBox="0 0 14 16" fill="none">
+                  <path d="M12.5 2H11V0.375C11 0.16875 10.8313 0 10.625 0H9.375C9.16875 0 9 0.16875 9 0.375V2H5V0.375C5 0.16875 4.83125 0 4.625 0H3.375C3.16875 0 3 0.16875 3 0.375V2H1.5C0.671875 2 0 2.67188 0 3.5V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V3.5C14 2.67188 13.3281 2 12.5 2ZM12.3125 14.5H1.6875C1.58438 14.5 1.5 14.4156 1.5 14.3125V5H12.5V14.3125C12.5 14.4156 12.4156 14.5 12.3125 14.5Z" fill="#939393"/>
+                </svg>
+                {dateFormat(featured.dateDePublication)}
+              </span>
+            </div>
+
+            <!-- Titre -->
+            <h1 class="mb-5">
+              <a href={`/publications/${featured.slug}`} class="transition-colors hover:text-primary">
+                {featured.titre}
+              </a>
+            </h1>
+
+            <!-- Description -->
+            <p class="line-clamp-4 text-text">{featured.description}</p>
+
+            <!-- CTA -->
+            <div class="mt-8 flex flex-wrap items-center gap-4">
+              <a class="btn btn-primary" href={`/publications/${featured.slug}`}>
+                Lire la publication
+              </a>
+              {featured.document?.fields.file && (
+                <a
+                  class="btn btn-outline-primary inline-flex items-center"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={`https:${featured.document.fields.file.url}`}
+                >
+                  <svg class="mr-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Télécharger le PDF
+                </a>
+              )}
+            </div>
+
+            <!-- Stats inline -->
+            <p class="mt-8 text-sm text-light">
+              {publications.length} publications · {categories.length} catégories
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  )}
+
   <PublicationPosts
     client:load
     categories={categories}
     career={career}
     posts={publications}
+    featuredSlug={featured?.slug}
     postsPerPage={postsPerPage}
   />
   <CareerBenifits benifits={benifits} />
