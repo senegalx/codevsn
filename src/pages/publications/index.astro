@@ -59,7 +59,6 @@ const postsPerPage = config.settings.pagination;
       </div>
     </div>
   </section>
-  <CareerBenifits benifits={benifits} />
   <PublicationPosts
     client:load
     categories={categories}
@@ -67,5 +66,6 @@ const postsPerPage = config.settings.pagination;
     posts={publications}
     postsPerPage={postsPerPage}
   />
+  <CareerBenifits benifits={benifits} />
   <Cta />
 </Base>

@@ -2,17 +2,32 @@ import { useState, useMemo } from "react";
 import { humanize } from "@lib/utils/textConverter";
 import dateFormat from "@lib/utils/dateFormat";
 import { marked } from "marked";
-import { AiOutlineArrowRight, AiOutlineArrowLeft } from "react-icons/ai/index.js";
+import {
+  AiOutlineArrowRight,
+  AiOutlineArrowLeft,
+  AiOutlineCalendar,
+} from "react-icons/ai/index.js";
+import { FiDownload, FiInbox } from "react-icons/fi/index.js";
+
+// Palette pour les badges de catégorie (réutilise les teintes de la charte).
+const CATEGORY_COLORS = ["#24A1FF", "#7B5AFF", "#FDC528", "#FF5874", "#12E189", "#E545FF"];
 
 const PublicationPosts = ({ posts, categories, career: { title, subtitle }, postsPerPage }) => {
   const [tab, setTab] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Une publication peut porter une catégorie string ou un tableau : on prend la 1re.
+  const mainCategory = (cat) => (Array.isArray(cat) ? cat[0] : cat) || "";
+
+  // Couleur stable par catégorie (basée sur l'ordre de déclaration).
+  const colorFor = (cat) =>
+    CATEGORY_COLORS[categories.indexOf(cat) % CATEGORY_COLORS.length] || "#24A1FF";
+
   const filterPost = useMemo(() => {
     setCurrentPage(1); // Reset page when filter changes
     return !tab
       ? posts
-      : posts.filter((post) => post.categories.includes(tab));
+      : posts.filter((post) => post.categories?.includes(tab));
   }, [posts, tab]);
 
   // Pagination logic
@@ -23,11 +38,27 @@ const PublicationPosts = ({ posts, categories, career: { title, subtitle }, post
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Mise en avant : 1re publication de la page 1 en vedette pleine largeur.
+  const featured = currentPage === 1 ? currentPosts[0] : null;
+  const gridPosts = currentPage === 1 ? currentPosts.slice(1) : currentPosts;
+
   // Generate page numbers for pagination controls
   const pageNumbers = [];
   for (let i = 1; i <= totalPages; i++) {
     pageNumbers.push(i);
   }
+
+  const CategoryBadge = ({ category }) => {
+    const cat = mainCategory(category);
+    return cat ? (
+      <span
+        className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
+        style={{ backgroundColor: colorFor(cat) }}
+      >
+        {humanize(cat)}
+      </span>
+    ) : null;
+  };
 
   return (
     <section className="section">
@@ -39,6 +70,12 @@ const PublicationPosts = ({ posts, categories, career: { title, subtitle }, post
               className="mt-4"
               dangerouslySetInnerHTML={{ __html: marked.parseInline(subtitle) }}
             />
+
+            {/* Compteur de résultats */}
+            <p className="mt-3 text-sm text-light">
+              {filterPost.length} publication{filterPost.length > 1 ? "s" : ""}
+              {tab ? ` · ${humanize(tab)}` : ""}
+            </p>
 
             <ul className="filter-list mt-8 flex flex-wrap items-center justify-center">
               <li>
@@ -65,52 +102,134 @@ const PublicationPosts = ({ posts, categories, career: { title, subtitle }, post
             </ul>
           </div>
         </div>
-        <div className="row mt-12">
-          {currentPosts.map((post, i) => (
-            <div className="mb-8 md:col-6" key={`post-${i}`}>
-              <div className="rounded-xl bg-white p-5 shadow-lg lg:p-10">
-                 {post.photo?.fields.file && (
-                  <img
-                    className="card-img mb-4"
-                    src={post.photo.fields.file.url}
-                    alt={post.photo.fields.file.fileName}
-                    width={335} // Added width for better rendering, adjust as needed
-                    height={210} // Added height for better rendering, adjust as needed
-                  />
-                )}
-                <h3 className="h4">{post.titre}</h3>
-                <p className="mt-6">{post.description}</p>
-                <ul className="mt-6 flex flex-wrap items-center text-dark">
-                  <li className="my-1 mr-8 inline-flex items-center">
-                    <svg
-                        className="mr-1.5"
-                        width="14"
-                        height="16"
-                        viewBox="0 0 14 16"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        >
-                        <path
-                            d="M12.5 2H11V0.375C11 0.16875 10.8313 0 10.625 0H9.375C9.16875 0 9 0.16875 9 0.375V2H5V0.375C5 0.16875 4.83125 0 4.625 0H3.375C3.16875 0 3 0.16875 3 0.375V2H1.5C0.671875 2 0 2.67188 0 3.5V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V3.5C14 2.67188 13.3281 2 12.5 2ZM12.3125 14.5H1.6875C1.58438 14.5 1.5 14.4156 1.5 14.3125V5H12.5V14.3125C12.5 14.4156 12.4156 14.5 12.3125 14.5Z"
-                            fill="#939393"
+
+        {/* Publication vedette */}
+        {featured && (
+          <div className="row mt-12">
+            <div className="col-12">
+              <div className="group overflow-hidden rounded-xl bg-white shadow-lg transition-shadow duration-300 hover:shadow-2xl">
+                <div className="row items-center">
+                  <div className="lg:col-6">
+                    <a href={`/publications/${featured.slug}`} className="block overflow-hidden">
+                      {featured.photo?.fields.file && (
+                        <img
+                          className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          src={featured.photo.fields.file.url}
+                          alt={featured.photo.fields.file.fileName}
+                          loading="eager"
                         />
-                    </svg>
-                    {dateFormat(post.dateDePublication)}
-                  </li>
-                  <li className="my-1 mr-8">
+                      )}
+                    </a>
+                  </div>
+                  <div className="p-7 lg:col-6 lg:p-10">
+                    <div className="mb-4 flex items-center gap-x-4">
+                      <CategoryBadge category={featured.categories} />
+                      <span className="inline-flex items-center text-sm text-light">
+                        <AiOutlineCalendar className="mr-1.5" />
+                        {dateFormat(featured.dateDePublication)}
+                      </span>
+                    </div>
+                    <h3 className="h2">
+                      <a
+                        href={`/publications/${featured.slug}`}
+                        className="transition-colors hover:text-primary"
+                      >
+                        {featured.titre}
+                      </a>
+                    </h3>
+                    <p className="mt-4 line-clamp-3">{featured.description}</p>
+                    <div className="mt-8 flex flex-wrap items-center gap-4">
+                      <a className="btn btn-primary btn-sm" href={`/publications/${featured.slug}`}>
+                        Lire la publication
+                      </a>
+                      {featured.document?.fields.file && (
+                        <a
+                          className="btn btn-outline-primary btn-sm inline-flex items-center"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          href={featured.document.fields.file.url}
+                        >
+                          <FiDownload className="mr-1.5" />
+                          Télécharger le PDF
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Grille 3 colonnes */}
+        <div className="row mt-8">
+          {gridPosts.map((post, i) => (
+            <div className="mb-8 md:col-6 lg:col-4" key={`post-${i}`}>
+              <div className="group flex h-full flex-col overflow-hidden rounded-xl bg-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                <a href={`/publications/${post.slug}`} className="block overflow-hidden">
+                  {post.photo?.fields.file ? (
+                    <img
+                      className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      src={post.photo.fields.file.url}
+                      alt={post.photo.fields.file.fileName}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="aspect-[16/10] w-full bg-theme-light" />
+                  )}
+                </a>
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="mb-3 flex items-center gap-x-3">
+                    <CategoryBadge category={post.categories} />
+                    {post.document?.fields.file && (
+                      <FiDownload className="text-light" title="PDF disponible" />
+                    )}
+                  </div>
+                  <h3 className="h5">
+                    <a
+                      href={`/publications/${post.slug}`}
+                      className="transition-colors hover:text-primary"
+                    >
+                      {post.titre}
+                    </a>
+                  </h3>
+                  <p className="mt-3 line-clamp-3 text-sm">{post.description}</p>
+                  <div className="mt-auto flex items-center justify-between pt-6">
+                    <span className="inline-flex items-center text-sm text-light">
+                      <AiOutlineCalendar className="mr-1.5" />
+                      {dateFormat(post.dateDePublication)}
+                    </span>
                     <a
                       className="inline-flex items-center font-semibold text-primary"
                       href={`/publications/${post.slug}`}
                     >
                       Découvrir
-                      <AiOutlineArrowRight className="ml-1.5 text-xl font-bold" />
+                      <AiOutlineArrowRight className="ml-1.5 text-lg font-bold transition-transform group-hover:translate-x-1" />
                     </a>
-                  </li>
-                </ul>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
         </div>
+
+        {/* État vide */}
+        {filterPost.length === 0 && (
+          <div className="row mt-12">
+            <div className="mx-auto text-center lg:col-6">
+              <FiInbox className="mx-auto text-5xl text-light" />
+              <p className="mt-4 text-light">
+                Aucune publication dans cette catégorie pour le moment.
+              </p>
+              <span
+                className="filter-btn btn btn-sm mt-6 inline-block cursor-pointer"
+                onClick={() => setTab("")}
+              >
+                Voir toutes les publications
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
