@@ -1,22 +1,23 @@
 import { useState, useMemo } from "react";
-import { humanize } from "@lib/utils/textConverter";
+import { humanize, plainify } from "@lib/utils/textConverter";
 import { colorForCategory, mainCategory } from "@lib/utils/categoryColors";
-import dateFormat from "@lib/utils/dateFormat";
 import { cfImage } from "@lib/utils/cfImage";
-import { marked } from "marked";
+import dateFormat from "@lib/utils/dateFormat";
+import readingTime from "@lib/utils/readingTime";
 import {
   AiOutlineArrowRight,
   AiOutlineArrowLeft,
   AiOutlineCalendar,
 } from "react-icons/ai/index.js";
-import { FiDownload, FiInbox } from "react-icons/fi/index.js";
+import { FiInbox } from "react-icons/fi/index.js";
 
-const PublicationPosts = ({
+const SUMMARY_LENGTH = 200;
+
+const ArticlePosts = ({
   posts,
   categories,
-  career: { title, subtitle },
-  postsPerPage,
   featuredSlug,
+  postsPerPage,
 }) => {
   const [tab, setTab] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -29,7 +30,10 @@ const PublicationPosts = ({
     if (!tab) {
       return posts.filter((p) => p.slug !== featuredSlug);
     }
-    return posts.filter((post) => post.categories?.includes(tab));
+    return posts.filter((post) => {
+      const cats = Array.isArray(post.categories) ? post.categories : [post.categories];
+      return cats.includes(tab);
+    });
   }, [posts, tab, featuredSlug]);
 
   const indexOfLastPost = currentPage * postsPerPage;
@@ -44,36 +48,18 @@ const PublicationPosts = ({
     pageNumbers.push(i);
   }
 
-  const CategoryBadge = ({ category }) => {
-    const cat = getMainCat(category);
-    return cat ? (
-      <span
-        className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
-        style={{ backgroundColor: colorFor(cat) }}
-      >
-        {humanize(cat)}
-      </span>
-    ) : null;
-  };
-
   return (
     <section className="section pt-0">
       <div className="container">
 
-        {/* En-tête section filtre */}
+        {/* En-tête filtre */}
         <div className="row">
           <div className="mx-auto text-center lg:col-8">
-            <h2>{title}</h2>
-            <p
-              className="mt-3"
-              dangerouslySetInnerHTML={{ __html: marked.parseInline(subtitle) }}
-            />
-
-            {/* Compteur */}
-            <p className="mt-2 text-sm text-light">
+            <h2>Toutes les actualités</h2>
+            <p className="mt-3 text-light">
               {tab
-                ? `${filterPost.length} publication${filterPost.length > 1 ? "s" : ""} · ${humanize(tab)}`
-                : `${posts.length - 1} autre${posts.length - 1 > 1 ? "s" : ""} publication${posts.length - 1 > 1 ? "s" : ""}`}
+                ? `${filterPost.length} article${filterPost.length > 1 ? "s" : ""} · ${humanize(tab)}`
+                : `${posts.length - 1} autre${posts.length - 1 > 1 ? "s" : ""} article${posts.length - 1 > 1 ? "s" : ""}`}
             </p>
 
             {/* Filtre catégories */}
@@ -103,15 +89,20 @@ const PublicationPosts = ({
         <div className="row mt-12">
           {currentPosts.map((post, i) => {
             const cat = getMainCat(post.categories);
+            const badgeColor = cat ? colorFor(cat) : "#24A1FF";
+            const excerpt = plainify(post.contenu ?? "").slice(0, SUMMARY_LENGTH);
+            const imageUrl = post.image?.fields?.file?.url;
+            const imageAlt = post.image?.fields?.file?.fileName || post.title;
+
             return (
               <div className="mb-8 md:col-6 lg:col-4" key={`post-${i}`}>
                 <div className="group flex h-full flex-col overflow-hidden rounded-xl bg-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
-                  <a href={`/publications/${post.slug}`} className="block overflow-hidden">
-                    {post.photo?.fields.file ? (
+                  <a href={`/actualites/${post.slug}`} className="block overflow-hidden">
+                    {imageUrl ? (
                       <img
                         className="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        src={cfImage(post.photo.fields.file.url, { w: 640, h: 400 })}
-                        alt={post.photo.fields.file.fileName}
+                        src={cfImage(imageUrl, { w: 640, h: 400 })}
+                        alt={imageAlt}
                         loading="lazy"
                       />
                     ) : (
@@ -120,28 +111,39 @@ const PublicationPosts = ({
                   </a>
                   <div className="flex flex-1 flex-col p-6">
                     <div className="mb-3 flex items-center gap-x-3">
-                      <CategoryBadge category={post.categories} />
-                      {post.document?.fields.file && (
-                        <FiDownload className="text-light" title="PDF disponible" />
+                      {cat && (
+                        <span
+                          className="inline-block rounded-full px-3 py-1 text-xs font-semibold text-white"
+                          style={{ backgroundColor: badgeColor }}
+                        >
+                          {humanize(cat)}
+                        </span>
                       )}
                     </div>
                     <h3 className="h5">
                       <a
-                        href={`/publications/${post.slug}`}
+                        href={`/actualites/${post.slug}`}
                         className="transition-colors hover:text-primary"
                       >
-                        {post.titre}
+                        {post.title}
                       </a>
                     </h3>
-                    <p className="mt-3 line-clamp-3 text-sm text-text">{post.description}</p>
+                    <p className="mt-3 line-clamp-3 text-sm text-text">{excerpt}</p>
+                    {(post.author || post.contenu) && (
+                      <p className="mt-2 text-xs text-light">
+                        {post.author ? humanize(post.author) : ""}
+                        {post.author && post.contenu ? " · " : ""}
+                        {post.contenu ? readingTime(post.contenu) : ""}
+                      </p>
+                    )}
                     <div className="mt-auto flex items-center justify-between pt-6">
                       <span className="inline-flex items-center text-sm text-light">
                         <AiOutlineCalendar className="mr-1.5" />
-                        {dateFormat(post.dateDePublication)}
+                        {dateFormat(post.date)}
                       </span>
                       <a
                         className="inline-flex items-center font-semibold text-primary"
-                        href={`/publications/${post.slug}`}
+                        href={`/actualites/${post.slug}`}
                       >
                         Découvrir
                         <AiOutlineArrowRight className="ml-1.5 text-lg font-bold transition-transform group-hover:translate-x-1" />
@@ -160,13 +162,13 @@ const PublicationPosts = ({
             <div className="mx-auto text-center lg:col-6">
               <FiInbox className="mx-auto text-5xl text-light" />
               <p className="mt-4 text-light">
-                Aucune publication dans cette catégorie pour le moment.
+                Aucun article dans cette catégorie pour le moment.
               </p>
               <span
                 className="filter-btn btn btn-sm mt-6 inline-block cursor-pointer"
                 onClick={() => setTab("")}
               >
-                Voir toutes les publications
+                Voir tous les articles
               </span>
             </div>
           </div>
@@ -213,4 +215,4 @@ const PublicationPosts = ({
   );
 };
 
-export default PublicationPosts;
+export default ArticlePosts;

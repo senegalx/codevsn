@@ -26,15 +26,7 @@ const readingTime = (content: string) => {
 
   const minutes = Math.ceil(((words - imageAdjust) / WPS + imageSecs) / 60);
 
-  if (minutes < 10) {
-    if (minutes < 2) {
-      return "0" + minutes + ` Min read`;
-    } else {
-      return "0" + minutes + ` Mins read`;
-    }
-  } else {
-    return minutes + ` Mins read`;
-  }
+  return `${minutes} min de lecture`;
 };
 
 export default readingTime;

@@ -1,50 +1,138 @@
 ---
-import Blogs from "@components/Blogs.astro";
-import PageHeader from "@components/PageHeader.astro";
 import Shape from "@components/Shape.astro";
-import BlogCategories from "@components/blog/BlogCategories.astro";
-import FeaturedBlog from "@components/blog/FeaturedBlog.astro";
 import config from "@config/config.json";
 import Base from "@layouts/Base.astro";
-import Pagination from "@layouts/components/Pagination.astro";
 import Cta from "@layouts/partials/Cta.astro";
+import ArticlePosts from "@layouts/function-components/ArticlePosts";
 import { getEntryBySlug } from "astro:content";
 import { getArticles, getCategories, getFeaturedArticles, getRecentdArticles } from "../../lib/publicationParser.astro";
+import { cfImage } from "@lib/utils/cfImage";
+import { colorForCategory, mainCategory } from "@lib/utils/categoryColors";
+import { humanize, plainify } from "@lib/utils/textConverter";
+import dateFormat from "@lib/utils/dateFormat";
 
-const { blog_folder } = config.settings;
-const blogIndex = await getEntryBySlug<any, string>(blog_folder, "-index");
-const posts = await getArticles();
-const featuredPost = await getFeaturedArticles();
-const recentPost = await getRecentdArticles();
-const totalPages = Math.ceil(recentPost.length / config.settings.pagination);
-const currentPosts = recentPost.slice(0, config.settings.pagination);
+const blogIndex = await getEntryBySlug<any, string>(config.settings.blog_folder, "-index");
+const allArticles = await getArticles();
+const featuredPosts = await getFeaturedArticles();
+const recentPosts = await getRecentdArticles();
 const categories = await getCategories();
+
+// Vedette : premier featured, sinon premier récent
+const featured = featuredPosts[0] ?? recentPosts[0] ?? null;
+
+const featuredCat = featured ? mainCategory(featured.categories) : null;
+const featuredCatColor = featuredCat ? colorForCategory(featuredCat, categories) : "#24A1FF";
 ---
 
 <Base
   title={blogIndex.data.title}
   meta_title={blogIndex.data.meta_title}
   description={blogIndex.data.description}
-  image={blogIndex.data.image}
+  image={featured?.image?.fields?.file?.url
+    ? cfImage(featured.image.fields.file.url, { w: 1200, h: 630 })
+    : blogIndex.data.image}
 >
   <Shape />
-  <section class="page-hero pt-16">
-    <div class="container">
-      <PageHeader page_data={blogIndex.data} />
-    </div>
-  </section>
-  <section class="section">
-    <div class="container">
-      <FeaturedBlog posts={featuredPost} />
-      <BlogCategories categories={categories} />
-      <h2 class="h4 mb-4">Récents</h2>
-      <Blogs posts={currentPosts} />
-      <Pagination
-        section={blog_folder}
-        currentPage={1}
-        totalPages={totalPages}
-      />
-    </div>
-  </section>
+
+  {featured && (
+    <section class="section pb-10 pt-12">
+      <div class="container">
+
+        <!-- Breadcrumb -->
+        <nav class="mb-10">
+          <ul class="breadcrumb inline-flex h-8 items-center justify-center space-x-2 rounded-3xl bg-theme-light px-4 py-2">
+            <li class="leading-none text-dark">
+              <a href="/" class="inline-flex items-center text-primary">
+                <svg class="mr-1.5" width="15" height="15" viewBox="0 0 16 16" fill="none">
+                  <path d="M13.1769 15.0588H10.3533V9.41178H5.64744V15.0588H2.82391V6.58825H1.88274V16H14.118V6.58825H13.1769V15.0588ZM6.58862 15.0588V10.353H9.41215V15.0588H6.58862ZM15.8084 6.09225L15.2512 6.85178L8.00038 1.52472L0.749559 6.8499L0.192383 6.09131L8.00038 0.357666L15.8084 6.09225Z" fill="black"/>
+                </svg>
+                <span class="text-sm leading-none">Accueil</span>
+              </a>
+            </li>
+            <li class="leading-none text-dark">
+              <span class="text-sm leading-none">/ Actualités</span>
+            </li>
+          </ul>
+        </nav>
+
+        <!-- Hero 50/50 -->
+        <div class="row items-center gap-y-10">
+
+          <!-- Image gauche -->
+          <div class="lg:col-6">
+            <a href={`/actualites/${featured.slug}`} class="group block overflow-hidden rounded-2xl shadow-xl">
+              {featured.image?.fields?.file && (
+                <img
+                  class="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  src={cfImage(featured.image.fields.file.url, { w: 1280, h: 800 })}
+                  alt={featured.image.fields.file.fileName}
+                  width="1280"
+                  height="800"
+                  loading="eager"
+                />
+              )}
+            </a>
+          </div>
+
+          <!-- Contenu droite -->
+          <div class="lg:col-6">
+            <!-- Badges + date -->
+            <div class="mb-5 flex flex-wrap items-center gap-3">
+              <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                À la une
+              </span>
+              {featuredCat && (
+                <span
+                  class="rounded-full px-3 py-1 text-xs font-semibold text-white"
+                  style={`background-color: ${featuredCatColor}`}
+                >
+                  {humanize(featuredCat)}
+                </span>
+              )}
+              <span class="inline-flex items-center text-sm text-light">
+                <svg class="mr-1.5" width="14" height="14" viewBox="0 0 14 16" fill="none">
+                  <path d="M12.5 2H11V0.375C11 0.16875 10.8313 0 10.625 0H9.375C9.16875 0 9 0.16875 9 0.375V2H5V0.375C5 0.16875 4.83125 0 4.625 0H3.375C3.16875 0 3 0.16875 3 0.375V2H1.5C0.671875 2 0 2.67188 0 3.5V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V3.5C14 2.67188 13.3281 2 12.5 2ZM12.3125 14.5H1.6875C1.58438 14.5 1.5 14.4156 1.5 14.3125V5H12.5V14.3125C12.5 14.4156 12.4156 14.5 12.3125 14.5Z" fill="#939393"/>
+                </svg>
+                {dateFormat(featured.date)}
+              </span>
+            </div>
+
+            <!-- Titre -->
+            <h1 class="mb-5">
+              <a href={`/actualites/${featured.slug}`} class="transition-colors hover:text-primary">
+                {featured.title}
+              </a>
+            </h1>
+
+            <!-- Extrait -->
+            <p class="line-clamp-4 text-text">
+              {plainify(featured.contenu ?? "").slice(0, 300)}
+            </p>
+
+            <!-- CTA -->
+            <div class="mt-8 flex flex-wrap items-center gap-4">
+              <a class="btn btn-primary" href={`/actualites/${featured.slug}`}>
+                Lire l'article
+              </a>
+            </div>
+
+            <!-- Stats -->
+            <p class="mt-8 text-sm text-light">
+              {allArticles.length} articles · {categories.length} catégories
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <ArticlePosts
+    client:load
+    posts={allArticles}
+    categories={categories}
+    featuredSlug={featured?.slug}
+    postsPerPage={config.settings.pagination}
+  />
+
   <Cta />
 </Base>

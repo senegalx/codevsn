@@ -8,6 +8,8 @@ import { getEntryBySlug } from "astro:content";
 import config from "@config/config.json";
 import dateFormat from "@lib/utils/dateFormat";
 import { humanize } from "@lib/utils/textConverter";
+import { cfImage } from "@lib/utils/cfImage";
+import { colorForCategory, mainCategory } from "@lib/utils/categoryColors";
 
 const publicationsIndex = await getEntryBySlug<any, string>("publications", "-index");
 const { benifits, career, categories } = publicationsIndex.data;
@@ -15,14 +17,8 @@ const publications = await getPublications();
 const postsPerPage = config.settings.pagination;
 const featured = publications[0];
 
-const CATEGORY_COLORS = ["#24A1FF", "#7B5AFF", "#FDC528", "#FF5874", "#12E189", "#E545FF"];
-const featuredCat = featured
-  ? (Array.isArray(featured.categories) ? featured.categories[0] : featured.categories)
-  : null;
-const featuredCatColor =
-  featuredCat
-    ? (CATEGORY_COLORS[categories.indexOf(featuredCat) % CATEGORY_COLORS.length] || "#24A1FF")
-    : "#24A1FF";
+const featuredCat = featured ? mainCategory(featured.categories) : null;
+const featuredCatColor = featuredCat ? colorForCategory(featuredCat, categories) : "#24A1FF";
 ---
 
 <Base
@@ -63,10 +59,10 @@ const featuredCatColor =
               {featured.photo?.fields.file && (
                 <img
                   class="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  src={`https:${featured.photo.fields.file.url}`}
+                  src={cfImage(featured.photo.fields.file.url, { w: 1280, h: 800 })}
                   alt={featured.photo.fields.file.fileName}
-                  width="640"
-                  height="400"
+                  width="1280"
+                  height="800"
                   loading="eager"
                 />
               )}

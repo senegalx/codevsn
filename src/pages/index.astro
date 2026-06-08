@@ -6,29 +6,32 @@ import Testimonial from "@layouts/components/Testimonial.astro";
 import Service from "@layouts/components/Service.astro";
 import PartnerBanner from "@components/features/PartnerBanner.astro";
 import Cta from "@layouts/partials/Cta.astro";
+import ContentCard from "@layouts/components/ContentCard.astro";
 import { getEntryBySlug } from "astro:content";
 
-// Blog and Publication section imports
-import Blogs from "@components/Blogs.astro";
-import FeaturedBlog from "@components/blog/FeaturedBlogUne.astro";
-import Publications from "@layouts/components/Publications.astro";
 import { getArticles, getCategories, getFeaturedArticles, getRecentdArticles, getPublications } from "../lib/publicationParser.astro";
+import { cfImage } from "@lib/utils/cfImage";
+import { colorForCategory, mainCategory } from "@lib/utils/categoryColors";
+import { humanize, plainify } from "@lib/utils/textConverter";
+import dateFormat from "@lib/utils/dateFormat";
 
 const homepage = await getEntryBySlug("homepage", "index");
 const { banner, key_features, service, partner, testimonial } = homepage.data;
 
-// Blog section data fetching
-const featuredPost = await getFeaturedArticles();
-const recentPost = await getRecentdArticles();
-const numberOfRecentPosts = 3;
-const currentPosts = recentPost.slice(0, numberOfRecentPosts);
-// categories are fetched but not used in the current layout for simplicity
+// Articles
+const featuredPosts = await getFeaturedArticles();
+const recentPosts = await getRecentdArticles();
 const categories = await getCategories();
+const featuredArticle = featuredPosts[0] ?? recentPosts[0] ?? null;
+const recentArticles = recentPosts.filter((p) => p.slug !== featuredArticle?.slug).slice(0, 3);
 
-// Publications section data fetching
-const latestPublications = await getPublications();
-const numberOfLatestPublications = 3;
-const currentPublications = latestPublications.slice(0, numberOfLatestPublications);
+const featuredCat = featuredArticle ? mainCategory(featuredArticle.categories) : null;
+const featuredCatColor = featuredCat ? colorForCategory(featuredCat, categories) : "#24A1FF";
+
+// Publications
+const allPublications = await getPublications();
+const latestPublications = allPublications.slice(0, 3);
+const pubCategories = ["Délibérations", "Documentation", "Guides", "Rapports"];
 ---
 
 <Base>
@@ -39,31 +42,139 @@ const currentPublications = latestPublications.slice(0, numberOfLatestPublicatio
   <!-- service -->
   <Service service={service} />
 
-  <!-- Latest Publications Section -->
+  <!-- Dernières Publications -->
   <section class="section">
     <div class="container">
-      <h2 class="h2 mb-8 text-center">Dernières Publications</h2>
-      {currentPublications && currentPublications.length > 0 && (
-        <Publications publications={currentPublications} />
-      )}
+      <div class="row justify-center">
+        <div class="text-center lg:col-8">
+          <h2 class="h2">Dernières Publications</h2>
+          <p class="mt-3 text-light">Rapports, guides et documents officiels du collectif</p>
+        </div>
+      </div>
+      <div class="row mt-12">
+        {latestPublications.map((pub) => {
+          const cat = mainCategory(pub.categories);
+          return (
+            <div class="mb-8 md:col-6 lg:col-4">
+              <ContentCard
+                href={`/publications/${pub.slug}`}
+                image={pub.photo?.fields?.file ? {
+                  url: pub.photo.fields.file.url,
+                  alt: pub.photo.fields.file.fileName,
+                } : undefined}
+                category={cat}
+                categories={pubCategories}
+                title={pub.titre}
+                excerpt={pub.description ?? ""}
+                date={pub.dateDePublication}
+                hasPdf={!!pub.document?.fields?.file}
+                ctaLabel="Découvrir"
+              />
+            </div>
+          );
+        })}
+      </div>
       <div class="mt-8 text-center">
         <a href="/publications" class="btn btn-primary">Voir toutes les publications</a>
       </div>
     </div>
   </section>
 
-  <!-- Latest News Section -->
+  <!-- Actualités -->
   <section class="section">
     <div class="container">
-      <h2 class="h2 mb-8 text-center">Actualités</h2>
-      {featuredPost && featuredPost.length > 0 && <FeaturedBlog posts={featuredPost} />}
-      {currentPosts && currentPosts.length > 0 && (
-        <>
-          {featuredPost && featuredPost.length > 0 && <div class="mt-12"></div>}
-          <Blogs posts={currentPosts} />
-        </>
+      <div class="row justify-center">
+        <div class="text-center lg:col-8">
+          <h2 class="h2">Actualités</h2>
+          <p class="mt-3 text-light">Les dernières nouvelles du Collectif des Volontaires du Sénégal</p>
+        </div>
+      </div>
+
+      {featuredArticle && (
+        <!-- Hero featured 50/50 -->
+        <div class="row mt-12 items-center gap-y-10">
+          <!-- Image gauche -->
+          <div class="lg:col-6">
+            <a href={`/actualites/${featuredArticle.slug}`} class="group block overflow-hidden rounded-2xl shadow-xl">
+              {featuredArticle.image?.fields?.file && (
+                <img
+                  class="aspect-[16/10] w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  src={cfImage(featuredArticle.image.fields.file.url, { w: 1280, h: 800 })}
+                  alt={featuredArticle.image.fields.file.fileName}
+                  width="1280"
+                  height="800"
+                  loading="eager"
+                />
+              )}
+            </a>
+          </div>
+          <!-- Contenu droite -->
+          <div class="lg:col-6">
+            <div class="mb-5 flex flex-wrap items-center gap-3">
+              <span class="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                À la une
+              </span>
+              {featuredCat && (
+                <span
+                  class="rounded-full px-3 py-1 text-xs font-semibold text-white"
+                  style={`background-color: ${featuredCatColor}`}
+                >
+                  {humanize(featuredCat)}
+                </span>
+              )}
+              <span class="inline-flex items-center text-sm text-light">
+                <svg class="mr-1.5" width="14" height="14" viewBox="0 0 14 16" fill="none">
+                  <path d="M12.5 2H11V0.375C11 0.16875 10.8313 0 10.625 0H9.375C9.16875 0 9 0.16875 9 0.375V2H5V0.375C5 0.16875 4.83125 0 4.625 0H3.375C3.16875 0 3 0.16875 3 0.375V2H1.5C0.671875 2 0 2.67188 0 3.5V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V3.5C14 2.67188 13.3281 2 12.5 2ZM12.3125 14.5H1.6875C1.58438 14.5 1.5 14.4156 1.5 14.3125V5H12.5V14.3125C12.5 14.4156 12.4156 14.5 12.3125 14.5Z" fill="#939393"/>
+                </svg>
+                {dateFormat(featuredArticle.date)}
+              </span>
+            </div>
+            <h2 class="mb-5">
+              <a href={`/actualites/${featuredArticle.slug}`} class="transition-colors hover:text-primary">
+                {featuredArticle.title}
+              </a>
+            </h2>
+            <p class="line-clamp-4 text-text">
+              {plainify(featuredArticle.contenu ?? "").slice(0, 300)}
+            </p>
+            <div class="mt-8">
+              <a class="btn btn-primary" href={`/actualites/${featuredArticle.slug}`}>
+                Lire l'article
+              </a>
+            </div>
+          </div>
+        </div>
       )}
-       <div class="mt-8 text-center">
+
+      {recentArticles.length > 0 && (
+        <div class="row mt-12">
+          {recentArticles.map((article) => {
+            const cat = mainCategory(article.categories);
+            return (
+              <div class="mb-8 md:col-6 lg:col-4">
+                <ContentCard
+                  href={`/actualites/${article.slug}`}
+                  image={article.image?.fields?.file ? {
+                    url: article.image.fields.file.url,
+                    alt: article.image.fields.file.fileName,
+                  } : undefined}
+                  category={cat}
+                  categories={categories}
+                  title={article.title}
+                  excerpt={plainify(article.contenu ?? "").slice(0, 200)}
+                  date={article.date}
+                  meta={{
+                    author: article.author,
+                  }}
+                  ctaLabel="Découvrir"
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div class="mt-8 text-center">
         <a href="/actualites" class="btn btn-primary">Voir toutes les actualités</a>
       </div>
     </div>
